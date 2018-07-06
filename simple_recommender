@@ -1,0 +1,147 @@
+#!/usr/bin/env python3
+# -*- coding: utf-8 -*-
+"""
+Created on Fri Jul  6 18:24:19 2018
+
+@author: rushikesh
+
+Simple Recommender:
+    Offer generalized recommendations to every user based on movie popularity 
+    and/or genre. The basic idea behind this system is that the more popular 
+    and critically acclaimed movie will have a higher probability of being liked 
+    by the average audience. IMDB top250 is an example of this system
+"""
+
+"""
+Steps to build a simple recommender:
+    1) Decide the metric or score to rate movies
+    2) Calculate the score for every movie
+    3) Sort the movies based on the score and output the top results
+    
+"""
+
+
+
+
+
+
+
+
+
+
+
+
+
+import pandas as pd
+import numpy as np
+
+
+
+
+#Importing the dataset
+
+""" 
+To avoid the following datatype warning specified low_memory=False
+
+DtypeWarning: Columns (10) have mixed types. Specify dtype option on import 
+or set low_memory=False.
+interactivity=interactivity, compiler=compiler, result=result)
+
+"""
+metadata = pd.read_csv('movies_metadata.csv', low_memory=False)
+
+#printing the first few rows
+metadata.head()
+
+
+"""
+One of the basic metrics you can think of is rating. However, this metric will
+also favour movies with smaller number of voters with skewed/or extremely 
+high ratings. As the no of voters increases the rating regularizes and approaches
+towards a value that is reflective of movies quality.
+
+Thus we need a weighting system to weigh the ratings considering the no of voters
+
+Weighted Rating(WR) = (v/(v+m))*R + (m/(v+m))*C
+
+where-
+v- no of votes for the movie
+m - min votes req to be listed in the chart
+R- avg rating of movie
+C- mean rating(vote) across the whole report
+
+We have values of v,R 
+C can be easily calculated
+We need to determine the appropriate value of m. It neglects the movie having 
+less than m votes. In this case we are using 90th percentile as our cutoff.
+Thus for a movie to be featured it must have more votes than atleast 90% of the
+movies in list.(Top 10percentile movies in terms of no of votes)
+
+"""
+
+
+#Calculating the value of C-
+
+C = metadata['vote_average'].mean()
+print(C)
+
+#Calculate the min number of votes req i.e m-
+
+#quantile() method of pandas is used to calc percentile
+m= metadata['vote_count'].quantile(0.90)
+print(m)
+
+#Selecting only thse movies having vote_count grater than m-
+
+
+#Creating a copy so that q_movies is independent of og metadata.Changes are ind
+q_movies = metadata.copy().loc[metadata['vote_count']>=m]
+
+q_movies.shape
+
+#In this case only 4555 movies qualify
+
+
+def weighted_rating(x, m=m, C=C):
+    v = x['vote_count']
+    R = x['vote_average']
+    
+    #Calculating weighted rating-
+    wr = (v/(v+m)*R) + (m/(v+m)*C)
+    return wr
+
+#Adding this wr as new feature 'score' to q_movies
+    
+q_movies['score'] = q_movies.apply(weighted_rating, axis=1)
+
+  q_movies.apply()
+    
+#Sorting the movies based on this score-
+
+q_movies = q_movies.sort_values('score', ascending = False)
+
+#Printing top 10 movies based on score-
+q_movies[['title','vote_count','vote_average','score']].head(10)
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
